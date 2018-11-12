@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -64,6 +65,7 @@ struct editorConfig {
 };
 
 struct editorConfig E;
+bool keyUpdate = false;
 
 /*** prototypes ***/
 
@@ -104,9 +106,11 @@ void enableRawMode() {
 int editorReadKey() {
   int nread;
   char c;
-  while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
-    if (nread == -1 && errno !=EAGAIN) die("read");
-  }
+
+  nread = read(STDIN_FILENO, &c, 1);
+  if (nread == -1 && errno !=EAGAIN) die("read");
+  if (nread == 0) return '\0';
+  keyUpdate = true;
 
   if (c == '\x1b') {
     char seq[3];
@@ -495,6 +499,14 @@ void editorDrawMessageBar(struct abuf *ab) {
 }
 
 void editorRefreshScreen() {
+  int oldRows = E.screenrows;
+  int oldCols = E.screencols;
+  if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
+    E.screenrows -= 2;
+
+  if (oldRows == E.screenrows && oldCols == E.screencols && keyUpdate == false)
+    return;
+
   editorScroll();
 
   struct abuf ab = ABUF_INIT;
@@ -511,6 +523,8 @@ void editorRefreshScreen() {
   abAppend(&ab, buf, strlen(buf));
 
   abAppend(&ab, "\x1b[?25h", 6);
+
+  keyUpdate = false;
 
   write(STDOUT_FILENO, ab.b, ab.len);
   abFree(&ab);
@@ -581,7 +595,8 @@ void editorMoveCursor(int key) {
       }
       break;
     case ARROW_UP:
-      E.cy--;
+      if (E.cy > 0)
+        E.cy--;
       break;
     case ARROW_DOWN:
       if (E.cy < E.numrows) {
@@ -603,6 +618,8 @@ void editorProcessKeypress() {
   int c = editorReadKey();
 
   switch (c) {
+    case '\0':
+      break;
     case '\r':
       editorInsertNewLine();
       break;
@@ -705,6 +722,7 @@ int main(int argc, char *argv[]) {
   }
 
   editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit");
+  keyUpdate = true;
 
   while (1) {
     editorRefreshScreen();

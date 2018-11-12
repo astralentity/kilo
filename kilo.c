@@ -595,8 +595,9 @@ void editorMoveCursor(int key) {
       }
       break;
     case ARROW_UP:
-      if (E.cy > 0)
+      if (E.cy > 0){
         E.cy--;
+      }
       break;
     case ARROW_DOWN:
       if (E.cy < E.numrows) {
@@ -626,8 +627,8 @@ void editorProcessKeypress() {
 
     case CTRL_KEY('q'):
       if (E.dirty && quit_times > 0) {
-        editorSetStatusMessage("Warning!!! File has unsaved changes."
-          "Press Ctrl- %d more times to quit.", quit_times);
+        editorSetStatusMessage("Warning!!! File has unsaved changes. "
+          "Press Ctrl-Q %d more times to quit.", quit_times);
         quit_times--;
         return;
       }

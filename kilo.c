@@ -615,11 +615,14 @@ void editorMoveCursor(int key) {
 
 void editorProcessKeypress() {
   static int quit_times = KILO_QUIT_TIMES;
-  
+
   int c = editorReadKey();
 
   switch (c) {
 
+    case '\0':
+      break;
+      
     case '\r':
       editorInsertNewLine();
       break;
@@ -685,9 +688,6 @@ void editorProcessKeypress() {
 
     case CTRL_KEY('l'):
     case '\x1b':
-      break;
-
-    case '\0':
       break;
 
     default:
